@@ -51,7 +51,7 @@ async def login(
     user_repository = SQLAlchemyUserRepository(db_session)
     use_case = LoginUserUseCase(user_repository, redis_client)
     token_pair = await use_case.execute(payload.email, payload.password)
-    return TokenPairResponse.model_validate(token_pair)
+    return TokenPairResponse.model_validate(token_pair.model_dump())
 
 
 @router.post("/refresh", response_model=TokenPairResponse)
@@ -61,16 +61,17 @@ async def refresh(
 ) -> TokenPairResponse:
     use_case = RefreshTokenUseCase(redis_client)
     token_pair = await use_case.execute(payload.refresh_token)
-    return TokenPairResponse.model_validate(token_pair)
+    return TokenPairResponse.model_validate(token_pair.model_dump())
 
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(
     payload: LogoutRequest,
     redis_client: Annotated[redis.Redis, Depends(get_redis_client)],
-) -> None:
+) -> dict[str, str]:
     use_case = LogoutUserUseCase(redis_client)
     await use_case.execute(payload.refresh_token)
+    return {"message": "Logged out"}
 
 
 @router.get("/me", response_model=UserResponse)

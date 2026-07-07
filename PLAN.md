@@ -8,6 +8,22 @@ Dự án xây dựng ứng dụng học tập gamified theo triết lý **"20 gi
 
 **Kiến trúc:** Microservices — 5 services độc lập giao tiếp qua REST (internal) và RabbitMQ (events)
 
+## Tiến độ thực thi (cập nhật)
+
+- [x] Giai đoạn 1.1 — Auth Service (JWT + refresh rotation + Redis blacklist/whitelist + Alembic migration `auth.users`)
+- [x] Giai đoạn 1.2 — API Gateway (proxy route map + verify JWT qua Auth internal endpoint + rate limit Redis)
+- [x] Giai đoạn 1.3 — Shared contracts (`shared/events/schemas.py`, `shared/schemas/auth.py`)
+- [ ] Giai đoạn 1.4 — Database schema đầy đủ cho tất cả services (đã bootstrap schema + hoàn tất migration cho `auth`, chưa triển khai bảng `learning/gamification/notification`)
+- [x] Giai đoạn 1.5 — Authentication flow giữa services (Gateway verify token và inject `X-User-Id`, `X-User-Email`)
+- [ ] Giai đoạn 1.6 — Edge cases toàn hệ thống (đã xử lý edge cases cho Auth; Learning/Gamification chưa bắt đầu)
+
+- [x] Sprint 1 (phần Foundation đã triển khai)
+- [ ] Sprint 2
+- [ ] Sprint 3
+- [ ] Sprint 4
+- [ ] Sprint 5
+- [ ] Sprint 6
+
 ---
 
 ## Sơ đồ kiến trúc
@@ -36,7 +52,7 @@ RabbitMQ (event bus)
 
 > Mục tiêu: Mọi service chạy được, xác thực JWT hoạt động, gateway proxy đúng.
 
-### 1.1 Auth Service
+### 1.1 Auth Service ✅ Hoàn thành
 
 **Domain entities:**
 - `User`: id, email, hashed_password, display_name, created_at, is_active
@@ -63,7 +79,7 @@ GET  /api/v1/auth/me
 
 ---
 
-### 1.2 API Gateway
+### 1.2 API Gateway ✅ Hoàn thành
 
 - Proxy tất cả request đến đúng service (httpx async)
 - Middleware xác thực JWT: inject `X-User-Id`, `X-User-Email` vào header downstream
@@ -80,14 +96,14 @@ GET  /api/v1/auth/me
 
 ---
 
-### 1.3 Shared contracts
+### 1.3 Shared contracts ✅ Hoàn thành
 
 - Thư mục `shared/`: Pydantic schemas dùng chung, RabbitMQ event schemas
 - Event types định nghĩa rõ ràng để các service không coupling trực tiếp
 
 ---
 
-### 1.4 Database Schema chi tiết
+### 1.4 Database Schema chi tiết ⏳ Đang triển khai
 
 > Mỗi service dùng **1 schema riêng** trong cùng PostgreSQL instance. Alembic migration chạy riêng trong từng service.
 
@@ -283,7 +299,7 @@ CREATE TABLE notification.notification_preferences (
 
 ---
 
-### 1.5 Authentication flow giữa các services
+### 1.5 Authentication flow giữa các services ✅ Hoàn thành
 
 > Quy tắc rõ ràng để tránh confusion khi implement.
 
@@ -322,7 +338,7 @@ GET  /health
 
 ---
 
-### 1.6 Edge Cases quan trọng
+### 1.6 Edge Cases quan trọng ⏳ Đang triển khai
 
 **Auth Service:**
 - Email đăng ký không phân biệt hoa/thường → lowercase trước khi lưu

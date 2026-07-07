@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import httpx
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from app.core.service_routes import SERVICE_ROUTES
@@ -30,13 +31,19 @@ async def proxy_request(full_path: str, request: Request) -> Response:
     forward_headers = _prepare_forward_headers(request)
     body = await request.body()
 
-    downstream_response = await request.app.state.http_client.request(
-        method=request.method,
-        url=target_url,
-        params=request.query_params,
-        headers=forward_headers,
-        content=body,
-    )
+    try:
+        downstream_response = await request.app.state.http_client.request(
+            method=request.method,
+            url=target_url,
+            params=request.query_params,
+            headers=forward_headers,
+            content=body,
+        )
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Downstream service unavailable: {exc}",
+        ) from exc
 
     response_headers = {
         key: value
