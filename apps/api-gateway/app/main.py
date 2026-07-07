@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 import httpx
 import redis.asyncio as redis
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
@@ -10,6 +11,10 @@ from app.core.rate_limit import RedisRateLimiter
 from app.core.service_routes import AUTH_REQUIRED_PREFIXES, AUTH_WHITELIST_EXACT, PUBLIC_PATHS
 from app.presentation.routes.health import router as health_router
 from app.presentation.routes.proxy import router as proxy_router
+
+
+def _parse_allowed_origins(raw_value: str) -> list[str]:
+    return [item.strip() for item in raw_value.split(",") if item.strip()]
 
 
 @asynccontextmanager
@@ -26,12 +31,23 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.service_name, version=settings.service_version, lifespan=lifespan)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_parse_allowed_origins(settings.cors_allow_origins),
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(health_router)
 app.include_router(proxy_router)
 
 
 @app.middleware("http")
 async def auth_and_rate_limit_middleware(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
     path = request.url.path
 
     if _is_public_path(path):
