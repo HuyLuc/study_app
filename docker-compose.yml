@@ -1,0 +1,117 @@
+services:
+  api-gateway:
+    build:
+      context: ./apps/api-gateway
+    container_name: study-api-gateway
+    ports:
+      - "8000:8000"
+    depends_on:
+      - auth-service
+      - learning-service
+      - gamification-service
+      - notification-service
+      - redis
+      - rabbitmq
+    networks:
+      - study-network
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+    container_name: study-auth-service
+    ports:
+      - "8001:8000"
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - study-network
+
+  learning-service:
+    build:
+      context: ./services/learning-service
+    container_name: study-learning-service
+    ports:
+      - "8002:8000"
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - study-network
+
+  gamification-service:
+    build:
+      context: ./services/gamification-service
+    container_name: study-gamification-service
+    ports:
+      - "8003:8000"
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - study-network
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+    container_name: study-notification-service
+    ports:
+      - "8004:8000"
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - study-network
+
+  web-client:
+    build:
+      context: ./web/client
+    container_name: study-web-client
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api-gateway
+    networks:
+      - study-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: study-postgres
+    environment:
+      POSTGRES_USER: study_user
+      POSTGRES_PASSWORD: study_password
+      POSTGRES_DB: study_app
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - study-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: study-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - study-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: study-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - study-network
+
+networks:
+  study-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
