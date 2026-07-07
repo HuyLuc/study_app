@@ -1,13 +1,17 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, time, timedelta, timezone
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import Select, select
+from sqlalchemy import Select, and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.infrastructure.db.models import (
+    ErrorEntryModel,
+    FlashcardModel,
+    FlashcardReviewModel,
     LearningTaskModel,
     PomodoroLogModel,
     SkillCommitmentModel,
@@ -254,8 +258,8 @@ class LearningUseCases:
         log = PomodoroLogModel(
             session_id=session_id,
             type=log_type,
-            started_at=started_at,
-            ended_at=ended_at,
+            started_at=self._to_utc(started_at),
+            ended_at=self._to_utc(ended_at) if ended_at else None,
             completed=completed,
         )
         self.db_session.add(log)
@@ -282,7 +286,7 @@ class LearningUseCases:
         if session.status != "active":
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Session already ended")
 
-        final_ended_at = ended_at or datetime.now(timezone.utc)
+        final_ended_at = self._to_utc(ended_at) if ended_at else datetime.now(timezone.utc)
         session.ended_at = final_ended_at
         session.status = "completed"
 
@@ -345,6 +349,210 @@ class LearningUseCases:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Session does not belong to user")
         return session
 
+    async def create_flashcard(self, user_id: UUID, skill_id: UUID, front: str, back: str) -> FlashcardModel:
+        await self.get_skill(user_id, skill_id)
+
+        card = FlashcardModel(
+            user_id=user_id,
+            skill_id=skill_id,
+            front=front,
+            back=back,
+        )
+        self.db_session.add(card)
+        await self.db_session.commit()
+        await self.db_session.refresh(card)
+        return card
+
+    async def list_flashcards(
+        self,
+        user_id: UUID,
+        skill_id: UUID | None,
+        due_today: bool,
+    ) -> list[FlashcardModel]:
+        latest_review_subquery = (
+            select(
+                FlashcardReviewModel.card_id.label("card_id"),
+                func.max(FlashcardReviewModel.reviewed_at).label("latest_reviewed_at"),
+            )
+            .where(FlashcardReviewModel.user_id == user_id)
+            .group_by(FlashcardReviewModel.card_id)
+            .subquery()
+        )
+        latest_review = aliased(FlashcardReviewModel)
+
+        stmt = (
+            select(FlashcardModel)
+            .outerjoin(latest_review_subquery, latest_review_subquery.c.card_id == FlashcardModel.id)
+            .outerjoin(
+                latest_review,
+                and_(
+                    latest_review.card_id == FlashcardModel.id,
+                    latest_review.reviewed_at == latest_review_subquery.c.latest_reviewed_at,
+                ),
+            )
+            .where(FlashcardModel.user_id == user_id)
+            .order_by(FlashcardModel.created_at.desc())
+        )
+
+        if skill_id is not None:
+            stmt = stmt.where(FlashcardModel.skill_id == skill_id)
+
+        if due_today:
+            now_utc = datetime.now(timezone.utc)
+            start_of_tomorrow = datetime.combine(now_utc.date() + timedelta(days=1), time.min, tzinfo=timezone.utc)
+            stmt = stmt.where(or_(latest_review.id.is_(None), latest_review.next_review_at < start_of_tomorrow))
+
+        result = await self.db_session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def review_flashcard(
+        self,
+        user_id: UUID,
+        card_id: UUID,
+        difficulty: int,
+        reviewed_at: datetime | None,
+    ) -> FlashcardReviewModel:
+        card = await self._get_flashcard_owned(user_id, card_id)
+        if not card:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Flashcard not found")
+
+        latest_review_stmt = (
+            select(FlashcardReviewModel)
+            .where(
+                FlashcardReviewModel.card_id == card_id,
+                FlashcardReviewModel.user_id == user_id,
+            )
+            .order_by(FlashcardReviewModel.reviewed_at.desc())
+            .limit(1)
+        )
+        latest_review_result = await self.db_session.execute(latest_review_stmt)
+        latest_review = latest_review_result.scalar_one_or_none()
+
+        review_at = self._to_utc(reviewed_at) if reviewed_at else datetime.now(timezone.utc)
+        interval_days, easiness_factor, repetitions = self._calculate_sm2(
+            previous=latest_review,
+            difficulty=difficulty,
+        )
+
+        review = FlashcardReviewModel(
+            card_id=card_id,
+            user_id=user_id,
+            reviewed_at=review_at,
+            difficulty=difficulty,
+            interval_days=interval_days,
+            easiness_factor=easiness_factor,
+            repetitions=repetitions,
+            next_review_at=review_at + timedelta(days=interval_days),
+        )
+        self.db_session.add(review)
+        await self.db_session.commit()
+        await self.db_session.refresh(review)
+        return review
+
+    async def get_flashcard_stats(self, user_id: UUID, skill_id: UUID | None) -> dict[str, int]:
+        cards_stmt = select(func.count(FlashcardModel.id)).where(FlashcardModel.user_id == user_id)
+        if skill_id is not None:
+            cards_stmt = cards_stmt.where(FlashcardModel.skill_id == skill_id)
+        total_cards = int((await self.db_session.execute(cards_stmt)).scalar_one())
+
+        due_cards = len(await self.list_flashcards(user_id=user_id, skill_id=skill_id, due_today=True))
+
+        reviews_stmt = (
+            select(func.count(FlashcardReviewModel.id))
+            .join(FlashcardModel, FlashcardModel.id == FlashcardReviewModel.card_id)
+            .where(FlashcardReviewModel.user_id == user_id)
+        )
+        if skill_id is not None:
+            reviews_stmt = reviews_stmt.where(FlashcardModel.skill_id == skill_id)
+        total_reviews = int((await self.db_session.execute(reviews_stmt)).scalar_one())
+
+        now_utc = datetime.now(timezone.utc)
+        start_of_day = datetime.combine(now_utc.date(), time.min, tzinfo=timezone.utc)
+        start_of_tomorrow = start_of_day + timedelta(days=1)
+        reviews_today_stmt = (
+            select(func.count(FlashcardReviewModel.id))
+            .join(FlashcardModel, FlashcardModel.id == FlashcardReviewModel.card_id)
+            .where(
+                FlashcardReviewModel.user_id == user_id,
+                FlashcardReviewModel.reviewed_at >= start_of_day,
+                FlashcardReviewModel.reviewed_at < start_of_tomorrow,
+            )
+        )
+        if skill_id is not None:
+            reviews_today_stmt = reviews_today_stmt.where(FlashcardModel.skill_id == skill_id)
+        reviews_today = int((await self.db_session.execute(reviews_today_stmt)).scalar_one())
+
+        return {
+            "total_cards": total_cards,
+            "due_today": due_cards,
+            "total_reviews": total_reviews,
+            "reviews_today": reviews_today,
+        }
+
+    async def create_error_entry(
+        self,
+        user_id: UUID,
+        skill_id: UUID,
+        session_id: UUID | None,
+        title: str,
+        description: str | None,
+        lesson_learned: str | None,
+    ) -> ErrorEntryModel:
+        await self.get_skill(user_id, skill_id)
+
+        if session_id:
+            session = await self._get_session(session_id)
+            if not session or session.user_id != user_id or session.skill_id != skill_id:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Session does not belong to user skill")
+
+        entry = ErrorEntryModel(
+            user_id=user_id,
+            skill_id=skill_id,
+            session_id=session_id,
+            title=title,
+            description=description,
+            lesson_learned=lesson_learned,
+        )
+        self.db_session.add(entry)
+        await self.db_session.commit()
+        await self.db_session.refresh(entry)
+        return entry
+
+    async def list_error_entries(self, user_id: UUID, skill_id: UUID | None) -> list[ErrorEntryModel]:
+        stmt = select(ErrorEntryModel).where(ErrorEntryModel.user_id == user_id).order_by(ErrorEntryModel.created_at.desc())
+        if skill_id is not None:
+            stmt = stmt.where(ErrorEntryModel.skill_id == skill_id)
+        result = await self.db_session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_error_entry(self, user_id: UUID, entry_id: UUID) -> ErrorEntryModel:
+        entry = await self._get_error_entry_owned(user_id, entry_id)
+        if not entry:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Journal entry not found")
+        return entry
+
+    async def update_error_entry(
+        self,
+        user_id: UUID,
+        entry_id: UUID,
+        title: str | None,
+        description: str | None,
+        lesson_learned: str | None,
+    ) -> ErrorEntryModel:
+        entry = await self.get_error_entry(user_id, entry_id)
+
+        if title is not None:
+            entry.title = title
+        if description is not None:
+            entry.description = description
+        if lesson_learned is not None:
+            entry.lesson_learned = lesson_learned
+        entry.updated_at = datetime.now(timezone.utc)
+
+        await self.db_session.commit()
+        await self.db_session.refresh(entry)
+        return entry
+
     async def _get_skill_owned(self, user_id: UUID, skill_id: UUID) -> SkillModel | None:
         stmt = select(SkillModel).where(SkillModel.id == skill_id, SkillModel.user_id == user_id)
         result = await self.db_session.execute(stmt)
@@ -367,3 +575,43 @@ class LearningUseCases:
         stmt = select(StudySessionModel).where(StudySessionModel.id == session_id)
         result = await self.db_session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def _get_flashcard_owned(self, user_id: UUID, card_id: UUID) -> FlashcardModel | None:
+        stmt = select(FlashcardModel).where(FlashcardModel.id == card_id, FlashcardModel.user_id == user_id)
+        result = await self.db_session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def _get_error_entry_owned(self, user_id: UUID, entry_id: UUID) -> ErrorEntryModel | None:
+        stmt = select(ErrorEntryModel).where(ErrorEntryModel.id == entry_id, ErrorEntryModel.user_id == user_id)
+        result = await self.db_session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    def _to_utc(value: datetime) -> datetime:
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
+
+    @staticmethod
+    def _calculate_sm2(previous: FlashcardReviewModel | None, difficulty: int) -> tuple[int, float, int]:
+        previous_ease = previous.easiness_factor if previous else 2.5
+        previous_interval = previous.interval_days if previous else 1
+        previous_repetitions = previous.repetitions if previous else 0
+
+        delta = 5 - difficulty
+        easiness_factor = previous_ease + (0.1 - delta * (0.08 + delta * 0.02))
+        easiness_factor = max(1.3, easiness_factor)
+
+        if difficulty < 3:
+            repetitions = 0
+            interval_days = 1
+        else:
+            repetitions = previous_repetitions + 1
+            if repetitions == 1:
+                interval_days = 1
+            elif repetitions == 2:
+                interval_days = 6
+            else:
+                interval_days = max(1, int(round(previous_interval * easiness_factor)))
+
+        return interval_days, easiness_factor, repetitions

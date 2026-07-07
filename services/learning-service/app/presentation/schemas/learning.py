@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -119,3 +120,77 @@ class SessionResponse(BaseModel):
     focus_duration: int
     break_duration: int
     status: str
+
+
+class FlashcardCreateRequest(BaseModel):
+    skill_id: UUID
+    front: str = Field(min_length=1)
+    back: str = Field(min_length=1)
+
+
+class FlashcardReviewRequest(BaseModel):
+    difficulty: int = Field(ge=1, le=5)
+    reviewed_at: datetime | None = None
+
+
+class FlashcardResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    user_id: UUID
+    skill_id: UUID
+    front: str
+    back: str
+    created_at: datetime
+
+
+class FlashcardReviewResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    card_id: UUID
+    user_id: UUID
+    reviewed_at: datetime
+    difficulty: int
+    interval_days: int
+    easiness_factor: float
+    repetitions: int
+    next_review_at: datetime
+
+
+class FlashcardStatsResponse(BaseModel):
+    total_cards: int
+    due_today: int
+    total_reviews: int
+    reviews_today: int
+
+
+class ErrorEntryCreateRequest(BaseModel):
+    skill_id: UUID
+    session_id: UUID | None = None
+    title: str = Field(min_length=1, max_length=300)
+    description: str | None = None
+    lesson_learned: str | None = None
+
+
+class ErrorEntryUpdateRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=300)
+    description: str | None = None
+    lesson_learned: str | None = None
+
+
+class ErrorEntryResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    user_id: UUID
+    skill_id: UUID
+    session_id: UUID | None
+    title: str
+    description: str | None
+    lesson_learned: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+DueFilter = Literal["today"]

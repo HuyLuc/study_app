@@ -99,3 +99,54 @@ class PomodoroLogModel(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+
+class FlashcardModel(Base):
+    __tablename__ = "flashcards"
+    __table_args__ = {"schema": "learning"}
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+    skill_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("learning.skills.id", ondelete="CASCADE"), nullable=False)
+    front: Mapped[str] = mapped_column(Text, nullable=False)
+    back: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class FlashcardReviewModel(Base):
+    __tablename__ = "flashcard_reviews"
+    __table_args__ = {"schema": "learning"}
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    card_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("learning.flashcards.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    user_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+    reviewed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    difficulty: Mapped[int] = mapped_column(Integer, nullable=False)
+    interval_days: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    easiness_factor: Mapped[float] = mapped_column(Float, nullable=False, default=2.5)
+    repetitions: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    next_review_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class ErrorEntryModel(Base):
+    __tablename__ = "error_entries"
+    __table_args__ = {"schema": "learning"}
+
+    id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+    skill_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("learning.skills.id", ondelete="CASCADE"), nullable=False)
+    session_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), ForeignKey("learning.study_sessions.id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    lesson_learned: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
