@@ -13,19 +13,23 @@ Dự án xây dựng ứng dụng học tập gamified theo triết lý **"20 gi
 - [x] Giai đoạn 1.1 — Auth Service (JWT + refresh rotation + Redis blacklist/whitelist + Alembic migration `auth.users`)
 - [x] Giai đoạn 1.2 — API Gateway (proxy route map + verify JWT qua Auth internal endpoint + rate limit Redis)
 - [x] Giai đoạn 1.3 — Shared contracts (`shared/events/schemas.py`, `shared/schemas/auth.py`)
-- [ ] Giai đoạn 1.4 — Database schema đầy đủ cho tất cả services (đã bootstrap schema + hoàn tất migration cho `auth` và `learning`, chưa triển khai bảng `gamification/notification`)
+- [ ] Giai đoạn 1.4 — Database schema đầy đủ cho tất cả services (đã bootstrap schema + hoàn tất migration cho `auth`, `learning`, `gamification`; chưa triển khai bảng `notification`)
 - [x] Giai đoạn 1.5 — Authentication flow giữa services (Gateway verify token và inject `X-User-Id`, `X-User-Email`)
-- [ ] Giai đoạn 1.6 — Edge cases toàn hệ thống (đã xử lý edge cases cho Auth + Learning; Gamification chưa bắt đầu)
+- [ ] Giai đoạn 1.6 — Edge cases toàn hệ thống (đã xử lý edge cases cho Auth + Learning + Gamification; Notification chưa bắt đầu)
 - [x] Giai đoạn 2.1 — Skill Deconstruction (Skill/SubSkill/Task APIs)
 - [x] Giai đoạn 2.2 — Commitment System (Create/Get/Abandon + progress cập nhật khi end session)
 - [x] Giai đoạn 2.3 — Pomodoro Deep Work Session (Start/Log/End/List + publish `session.completed`)
 - [x] Giai đoạn 2.4 — Flashcard System (Create/List/Review/Stats + SM-2 scheduling)
 - [x] Giai đoạn 2.5 — Error Journal (Create/List/Get/Update)
+- [x] Giai đoạn 3.1 — Streak System (consumer `session.completed` + API streak/freeze/calendar)
+- [x] Giai đoạn 3.2 — Variable Reward / Loot Box (RNG theo `user_id + session_id` + reward history/pool)
+- [x] Giai đoạn 3.3 — XP & Level System (XP gain từ session + level formula + leaderboard/profile)
+- [x] Giai đoạn 3.4 — Badge System (unlock theo session/streak + API badges/all)
 
 - [x] Sprint 1 (phần Foundation đã triển khai)
 - [x] Sprint 2
 - [x] Sprint 3
-- [ ] Sprint 4
+- [x] Sprint 4
 - [ ] Sprint 5
 - [ ] Sprint 6
 
