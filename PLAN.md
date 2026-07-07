@@ -13,9 +13,9 @@ Dự án xây dựng ứng dụng học tập gamified theo triết lý **"20 gi
 - [x] Giai đoạn 1.1 — Auth Service (JWT + refresh rotation + Redis blacklist/whitelist + Alembic migration `auth.users`)
 - [x] Giai đoạn 1.2 — API Gateway (proxy route map + verify JWT qua Auth internal endpoint + rate limit Redis)
 - [x] Giai đoạn 1.3 — Shared contracts (`shared/events/schemas.py`, `shared/schemas/auth.py`)
-- [ ] Giai đoạn 1.4 — Database schema đầy đủ cho tất cả services (đã bootstrap schema + hoàn tất migration cho `auth`, `learning`, `gamification`; chưa triển khai bảng `notification`)
+- [x] Giai đoạn 1.4 — Database schema đầy đủ cho tất cả services (đã bootstrap schema + hoàn tất migration cho `auth`, `learning`, `gamification`, `notification`)
 - [x] Giai đoạn 1.5 — Authentication flow giữa services (Gateway verify token và inject `X-User-Id`, `X-User-Email`)
-- [ ] Giai đoạn 1.6 — Edge cases toàn hệ thống (đã xử lý edge cases cho Auth + Learning + Gamification; Notification chưa bắt đầu)
+- [x] Giai đoạn 1.6 — Edge cases toàn hệ thống (đã xử lý edge cases cho Auth + Learning + Gamification, bao gồm scheduled streak-at-risk flow)
 - [x] Giai đoạn 2.1 — Skill Deconstruction (Skill/SubSkill/Task APIs)
 - [x] Giai đoạn 2.2 — Commitment System (Create/Get/Abandon + progress cập nhật khi end session)
 - [x] Giai đoạn 2.3 — Pomodoro Deep Work Session (Start/Log/End/List + publish `session.completed`)
@@ -25,13 +25,19 @@ Dự án xây dựng ứng dụng học tập gamified theo triết lý **"20 gi
 - [x] Giai đoạn 3.2 — Variable Reward / Loot Box (RNG theo `user_id + session_id` + reward history/pool)
 - [x] Giai đoạn 3.3 — XP & Level System (XP gain từ session + level formula + leaderboard/profile)
 - [x] Giai đoạn 3.4 — Badge System (unlock theo session/streak + API badges/all)
+- [x] Giai đoạn 4 — Notification Service (event consumers + in-app notifications + preferences + scheduled streak-at-risk publish)
+- [x] Giai đoạn 5 — Frontend React (auth, onboarding, dashboard, pomodoro, flashcard, journal, profile)
+- [x] Giai đoạn 5.1 — Frontend API/State flow (API client + auth refresh retry + integrated service calls)
+- [x] Giai đoạn 5.2 — Apple-style UI polish (focus overlay tối giản + flashcard reveal + loot capsule interaction)
+- [x] Giai đoạn 6.1 — Unit test foundation (SM-2 + streak/level logic)
 
 - [x] Sprint 1 (phần Foundation đã triển khai)
 - [x] Sprint 2
 - [x] Sprint 3
 - [x] Sprint 4
-- [ ] Sprint 5
-- [ ] Sprint 6
+- [x] Sprint 5
+- [x] Sprint 6
+- [x] Sprint 7 (Testing baseline + UI polish)
 
 ---
 
@@ -112,7 +118,7 @@ GET  /api/v1/auth/me
 
 ---
 
-### 1.4 Database Schema chi tiết ⏳ Đang triển khai
+### 1.4 Database Schema chi tiết ✅ Hoàn thành
 
 > Mỗi service dùng **1 schema riêng** trong cùng PostgreSQL instance. Alembic migration chạy riêng trong từng service.
 
@@ -347,7 +353,7 @@ GET  /health
 
 ---
 
-### 1.6 Edge Cases quan trọng ⏳ Đang triển khai
+### 1.6 Edge Cases quan trọng ✅ Hoàn thành
 
 **Auth Service:**
 - Email đăng ký không phân biệt hoa/thường → lowercase trước khi lưu
@@ -813,6 +819,10 @@ Sprint 6 (Giai đoạn 5)
 ├── Frontend — Pomodoro UI
 ├── Frontend — Session End + Loot Box
 └── Frontend — Flashcard + Journal + Profile
+
+Sprint 7 (Giai đoạn 5.2 + 6.1)
+├── Frontend — Apple-style polish (focus overlay, flashcard reveal)
+└── Backend — Unit test foundation cho SM-2 và gamification logic
 ```
 
 **Checkpoint mỗi sprint:**
@@ -822,6 +832,7 @@ Sprint 6 (Giai đoạn 5)
 - Sprint 4: End session → streak tăng → XP cộng → badge check chạy → loot box roll
 - Sprint 5: End session → notification in-app xuất hiện → 8PM không học → notification streak
 - Sprint 6: Toàn bộ user journey từ onboarding → pomodoro → loot box → flashcard chạy trơn tru
+- Sprint 7: Chạy unit tests cho SM-2 + streak/level, verify frontend focus overlay/flashcard reveal build pass
 
 ---
 

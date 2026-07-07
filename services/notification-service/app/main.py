@@ -1,9 +1,42 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from app.core.config import settings
+from app.infrastructure.db.session import AsyncSessionLocal, dispose_db_engine
+from app.infrastructure.jobs.streak_scheduler import StreakAtRiskScheduler
+from app.infrastructure.messaging.event_consumer import NotificationEventConsumer
+from app.infrastructure.messaging.event_publisher import EventPublisher
 from app.presentation.api.v1.router import api_router
 
-app = FastAPI(title=settings.service_name, version=settings.service_version)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.event_publisher = EventPublisher(settings.rabbitmq_url)
+    await app.state.event_publisher.connect()
+
+    app.state.event_consumer = NotificationEventConsumer(
+        amqp_url=settings.rabbitmq_url,
+        session_factory=AsyncSessionLocal,
+    )
+    await app.state.event_consumer.start()
+
+    app.state.streak_scheduler = StreakAtRiskScheduler(
+        session_factory=AsyncSessionLocal,
+        event_publisher=app.state.event_publisher,
+    )
+    app.state.streak_scheduler.start()
+
+    try:
+        yield
+    finally:
+        app.state.streak_scheduler.shutdown()
+        await app.state.event_consumer.close()
+        await app.state.event_publisher.close()
+        await dispose_db_engine()
+
+
+app = FastAPI(title=settings.service_name, version=settings.service_version, lifespan=lifespan)
 
 app.include_router(api_router, prefix="/api/v1")
 
