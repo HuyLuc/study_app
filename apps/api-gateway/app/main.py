@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 import httpx
 import redis.asyncio as redis
+import uuid
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -45,12 +46,19 @@ app.include_router(proxy_router)
 
 @app.middleware("http")
 async def auth_and_rate_limit_middleware(request: Request, call_next):
+    request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+    request.state.request_id = request_id
+
     if request.method == "OPTIONS":
         return await call_next(request)
 
     path = request.url.path
+    client_ip = request.headers.get("x-forwarded-for") or (request.client.host if request.client else "unknown")
 
     if _is_public_path(path):
+        allowed = await request.app.state.rate_limiter.allow_ip(client_ip, settings.rate_limit_ip_per_minute)
+        if not allowed:
+            return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"})
         return await call_next(request)
 
     if _requires_auth(path):

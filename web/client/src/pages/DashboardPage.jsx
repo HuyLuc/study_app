@@ -17,40 +17,40 @@ function DashboardPage({
   onMarkNotificationRead,
 }) {
   return (
-    <SectionShell title="Learning cockpit" subtitle="One place for streak, XP, skill progress, and notifications.">
+    <SectionShell title="Bảng điều khiển học tập" subtitle="Nơi quản lý chuỗi ngày học (streak), điểm kinh nghiệm (XP), tiến độ kỹ năng và thông báo.">
       <div className="metrics-grid">
         <MetricCard
-          label="Current XP"
+          label="Điểm XP hiện tại"
           value={profile ? profile.total_xp : "-"}
-          detail={profile ? `Level ${profile.level} · ${profile.title}` : "Gamification profile unavailable."}
+          detail={profile ? `Cấp độ ${profile.level} · ${profile.title}` : "Thông tin hồ sơ chưa sẵn sàng."}
         />
         <MetricCard
-          label="Current Streak"
-          value={streak ? `${streak.current_streak} days` : "-"}
-          detail={streak ? `Longest ${streak.longest_streak} · Freeze ${streak.freeze_count}` : "Streak engine idle."}
+          label="Chuỗi học tập (Streak)"
+          value={streak ? `${streak.current_streak} ngày` : "-"}
+          detail={streak ? `Kỷ lục ${streak.longest_streak} · Lượt đóng băng còn ${streak.freeze_count}` : "Streak engine đang tạm nghỉ."}
         />
         <MetricCard
-          label="Active Skills"
+          label="Kỹ năng đang học"
           value={skills.length}
-          detail={selectedSkill ? `Selected: ${selectedSkill.name}` : "Create your first skill to begin."}
+          detail={selectedSkill ? `Đang chọn: ${selectedSkill.name}` : "Tạo kỹ năng đầu tiên để bắt đầu."}
         />
         <MetricCard
-          label="Unread"
+          label="Thông báo chưa đọc"
           value={unreadNotifications.length}
-          detail="In-app notifications from events and streak monitor."
+          detail="Các thông báo từ hệ thống và nhắc nhở chuỗi học tập."
         />
       </div>
 
       <div className="split-grid">
         <article className="panel panel--soft">
           <header className="mini-header">
-            <h3>Skills</h3>
+            <h3>Kỹ năng</h3>
             <button type="button" className="chip" onClick={onOpenOnboarding}>
-              Open setup
+              Cài đặt
             </button>
           </header>
           {skills.length === 0 ? (
-            <EmptyState title="No skills yet" description="Create your first skill in Skill Setup." />
+            <EmptyState title="Chưa có kỹ năng nào" description="Hãy tạo kỹ năng đầu tiên của bạn trong phần Cài đặt kỹ năng." />
           ) : (
             <ul className="list">
               {skills.map((skill) => (
@@ -69,13 +69,13 @@ function DashboardPage({
 
         <article className="panel panel--soft">
           <header className="mini-header">
-            <h3>Notifications</h3>
+            <h3>Thông báo</h3>
             <button type="button" className="chip" onClick={onMarkAllNotificationsRead}>
-              Mark all read
+              Đọc tất cả
             </button>
           </header>
           {notifications.length === 0 ? (
-            <EmptyState title="No notifications" description="Complete sessions to trigger gamification events." />
+            <EmptyState title="Không có thông báo" description="Hoàn thành các phiên học để kích hoạt sự kiện học tập." />
           ) : (
             <ul className="list">
               {notifications.slice(0, 6).map((item) => (

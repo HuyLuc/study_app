@@ -19,3 +19,13 @@ class RedisRateLimiter:
             await self.redis_client.expire(key, 61)
 
         return count <= self.limit_per_minute
+
+    async def allow_ip(self, ip_address: str, limit: int) -> bool:
+        bucket = int(time.time() // 60)
+        key = f"gateway:rate:ip:{ip_address}:{bucket}"
+
+        count = await self.redis_client.incr(key)
+        if count == 1:
+            await self.redis_client.expire(key, 61)
+
+        return count <= limit

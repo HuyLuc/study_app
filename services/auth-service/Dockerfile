@@ -5,12 +5,16 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY requirements.txt .
+# Install shared library
+COPY shared /shared
+RUN pip install --no-cache-dir /shared
+
+COPY services/auth-service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY alembic.ini ./
-COPY alembic ./alembic
-COPY app ./app
+COPY services/auth-service/alembic.ini ./
+COPY services/auth-service/alembic ./alembic
+COPY services/auth-service/app ./app
 
 EXPOSE 8000
 

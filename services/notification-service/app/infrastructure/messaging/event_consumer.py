@@ -6,6 +6,21 @@ import aio_pika
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.application.use_cases.notification_use_cases import NotificationUseCases
+from events.schemas import (
+    SessionCompletedEvent,
+    StreakAtRiskEvent,
+    BadgeUnlockedEvent,
+    RewardGrantedEvent,
+    LevelUpEvent,
+)
+
+EVENT_SCHEMAS = {
+    "session.completed": SessionCompletedEvent,
+    "streak.at_risk": StreakAtRiskEvent,
+    "badge.unlocked": BadgeUnlockedEvent,
+    "reward.granted": RewardGrantedEvent,
+    "level.up": LevelUpEvent,
+}
 
 
 class NotificationEventConsumer:
@@ -48,7 +63,14 @@ class NotificationEventConsumer:
 
     async def _handle_message(self, message: aio_pika.IncomingMessage, routing_key: str) -> None:
         async with message.process(requeue=False):
-            payload = json.loads(message.body.decode("utf-8"))
+            payload_dict = json.loads(message.body.decode("utf-8"))
+            schema_cls = EVENT_SCHEMAS.get(routing_key)
+            if schema_cls:
+                event_model = schema_cls.model_validate(payload_dict)
+                payload = event_model.model_dump()
+            else:
+                payload = payload_dict
+
             async with self.session_factory() as session:
                 use_cases = NotificationUseCases(session)
                 await use_cases.handle_event(routing_key, payload)
@@ -56,3 +78,4 @@ class NotificationEventConsumer:
     async def close(self) -> None:
         if self._connection:
             await self._connection.close()
+

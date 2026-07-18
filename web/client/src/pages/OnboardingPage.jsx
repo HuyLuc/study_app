@@ -18,29 +18,29 @@ function OnboardingPage({
   commitment,
 }) {
   return (
-    <SectionShell title="Skill decomposition" subtitle="Create a skill, break it down, and lock a first-hour commitment.">
+    <SectionShell title="Phân rã kỹ năng" subtitle="Tạo kỹ năng, chia nhỏ nó ra và thiết lập cam kết giờ học đầu tiên.">
       <div className="split-grid">
         <form className="panel panel--soft form-stack" onSubmit={createSkill}>
-          <h3>Create skill</h3>
+          <h3>Tạo kỹ năng</h3>
           <label>
-            Name
+            Tên kỹ năng
             <input
               value={skillForm.name}
               onChange={(event) => setSkillForm((prev) => ({ ...prev, name: event.target.value }))}
-              placeholder="e.g. Product Design"
+              placeholder="Ví dụ: Thiết kế sản phẩm"
               required
             />
           </label>
           <label>
-            Description
+            Mô tả
             <textarea
               value={skillForm.description}
               onChange={(event) => setSkillForm((prev) => ({ ...prev, description: event.target.value }))}
-              placeholder="The one sentence outcome you want."
+              placeholder="Kết quả mục tiêu bạn mong muốn đạt được (1 câu)."
             />
           </label>
           <label>
-            Target hours
+            Số giờ mục tiêu
             <input
               type="number"
               min="1"
@@ -49,19 +49,19 @@ function OnboardingPage({
             />
           </label>
           <button type="submit" className="button button--primary">
-            Create skill
+            Tạo kỹ năng
           </button>
         </form>
 
         <div className="stacked-panels">
           <form className="panel panel--soft form-stack" onSubmit={createSubSkill}>
-            <h3>Add sub-skill</h3>
+            <h3>Thêm kỹ năng phụ</h3>
             <label>
-              Sub-skill
+              Tên kỹ năng phụ
               <input
                 value={subSkillForm.name}
                 onChange={(event) => setSubSkillForm((prev) => ({ ...prev, name: event.target.value }))}
-                placeholder="e.g. Typography hierarchy"
+                placeholder="Ví dụ: Hệ thống cấp bậc chữ (Typography)"
                 required
               />
             </label>
@@ -71,31 +71,31 @@ function OnboardingPage({
                 checked={subSkillForm.is_core}
                 onChange={(event) => setSubSkillForm((prev) => ({ ...prev, is_core: event.target.checked }))}
               />
-              <span>Core 20%</span>
+              <span>Cốt lõi 20%</span>
             </label>
             <button type="submit" className="button">
-              Add sub-skill
+              Thêm kỹ năng phụ
             </button>
             {latestSubSkill ? (
               <p className="muted">
-                Latest: {latestSubSkill.name} ({latestSubSkill.is_core ? "core" : "support"})
+                Mới nhất: {latestSubSkill.name} ({latestSubSkill.is_core ? "cốt lõi" : "bổ trợ"})
               </p>
             ) : null}
           </form>
 
           <form className="panel panel--soft form-stack" onSubmit={createTask}>
-            <h3>Create micro task</h3>
+            <h3>Tạo vi nhiệm vụ</h3>
             <label>
-              Title
+              Tiêu đề
               <input
                 value={taskForm.title}
                 onChange={(event) => setTaskForm((prev) => ({ ...prev, title: event.target.value }))}
-                placeholder="e.g. Draft one wireframe in 5 minutes"
+                placeholder="Ví dụ: Phác thảo 1 wireframe trong 5 phút"
                 required
               />
             </label>
             <label>
-              Estimated minutes
+              Số phút ước tính
               <input
                 type="number"
                 min="1"
@@ -105,15 +105,15 @@ function OnboardingPage({
               />
             </label>
             <button type="submit" className="button">
-              Create task
+              Tạo nhiệm vụ
             </button>
-            {latestTask ? <p className="muted">Latest task: {latestTask.title}</p> : null}
+            {latestTask ? <p className="muted">Nhiệm vụ mới nhất: {latestTask.title}</p> : null}
           </form>
 
           <form className="panel panel--soft form-stack" onSubmit={createCommitment}>
-            <h3>5-hour commitment</h3>
+            <h3>Cam kết 5 giờ</h3>
             <label>
-              Target hours
+              Số giờ mục tiêu
               <input
                 type="number"
                 min="1"
@@ -125,14 +125,14 @@ function OnboardingPage({
               />
             </label>
             <button type="submit" className="button">
-              Sign commitment
+              Ký cam kết
             </button>
             {commitment ? (
               <p className="muted">
-                Status: {commitment.status} · {commitment.hours_completed.toFixed(2)}h / {commitment.target_hours}h
+                Trạng thái: {commitment.status} · {commitment.hours_completed.toFixed(2)}h / {commitment.target_hours}h
               </p>
             ) : (
-              <p className="muted">No active commitment for selected skill.</p>
+              <p className="muted">Chưa có cam kết hoạt động cho kỹ năng đã chọn.</p>
             )}
           </form>
         </div>

@@ -21,14 +21,14 @@ function PomodoroPage({
   sessions,
 }) {
   return (
-    <SectionShell title="Deep work mode" subtitle="Start session, log focus blocks, and end to trigger reward and streak updates.">
+    <SectionShell title="Chế độ làm việc sâu" subtitle="Bắt đầu phiên làm việc, ghi nhận các chu kỳ tập trung và nhận phần thưởng học tập.">
       <div className="split-grid">
         <form className="panel panel--soft form-stack" onSubmit={startSession}>
-          <h3>Start session</h3>
+          <h3>Bắt đầu phiên học</h3>
           <label>
-            Skill
+            Kỹ năng
             <select value={selectedSkillId} onChange={(event) => setSelectedSkillId(event.target.value)} required>
-              <option value="">Select skill</option>
+              <option value="">Chọn kỹ năng</option>
               {skills.map((skill) => (
                 <option key={skill.id} value={skill.id}>
                   {skill.name}
@@ -37,7 +37,7 @@ function PomodoroPage({
             </select>
           </label>
           <label>
-            Focus duration (minutes)
+            Thời gian tập trung (phút)
             <input
               type="number"
               min="1"
@@ -47,7 +47,7 @@ function PomodoroPage({
             />
           </label>
           <label>
-            Break duration (minutes)
+            Thời gian giải lao (phút)
             <input
               type="number"
               min="1"
@@ -57,7 +57,7 @@ function PomodoroPage({
             />
           </label>
           <button type="submit" className="button button--primary" disabled={!selectedSkillId || Boolean(activeSession)}>
-            {activeSession ? "Session active" : "Start session"}
+            {activeSession ? "Đang trong phiên học" : "Bắt đầu phiên học"}
           </button>
           <button
             type="button"
@@ -65,15 +65,15 @@ function PomodoroPage({
             onClick={() => setFocusOverlayOpen(true)}
             disabled={!activeSession}
           >
-            Enter focus view
+            Vào chế độ tập trung
           </button>
           {activeSession ? (
             <div className="action-row">
               <button type="button" className="button" onClick={logFocusCycle}>
-                Log focus cycle
+                Ghi nhận Pomodoro
               </button>
               <button type="button" className="button button--primary" onClick={endSession}>
-                End session
+                Kết thúc phiên học
               </button>
             </div>
           ) : null}
@@ -81,53 +81,53 @@ function PomodoroPage({
 
         <div className="stacked-panels">
           <article className="panel panel--soft">
-            <h3>Live session</h3>
+            <h3>Phiên hiện tại</h3>
             {activeSession ? (
               <div className="session-live">
                 <p>
-                  <strong>Started:</strong> {formatDate(activeSession.started_at)}
+                  <strong>Bắt đầu:</strong> {formatDate(activeSession.started_at)}
                 </p>
                 <p>
-                  <strong>Pomodoros:</strong> {activeSession.pomodoros_completed}
+                  <strong>Số Pomodoro đã xong:</strong> {activeSession.pomodoros_completed}
                 </p>
                 <p>
-                  <strong>Focus minutes:</strong> {activeSession.total_focus_minutes.toFixed(1)}
+                  <strong>Thời gian tập trung:</strong> {activeSession.total_focus_minutes.toFixed(1)} phút
                 </p>
               </div>
             ) : (
-              <EmptyState title="No active session" description="Start one to enter deep work mode." />
+              <EmptyState title="Không có phiên học nào hoạt động" description="Hãy bắt đầu một phiên học để tập trung sâu." />
             )}
           </article>
 
           <article className="panel panel--soft">
-            <h3>Last summary</h3>
+            <h3>Kết quả phiên trước</h3>
             {sessionSummary ? (
               <div className="session-live">
                 <p>
-                  <strong>Focus minutes:</strong> {sessionSummary.total_focus_minutes.toFixed(1)}
+                  <strong>Thời gian tập trung:</strong> {sessionSummary.total_focus_minutes.toFixed(1)} phút
                 </p>
                 <p>
-                  <strong>Pomodoros:</strong> {sessionSummary.pomodoros_completed}
+                  <strong>Số Pomodoro hoàn thành:</strong> {sessionSummary.pomodoros_completed}
                 </p>
                 <p>
-                  <strong>Status:</strong> {sessionSummary.status}
+                  <strong>Trạng thái:</strong> {sessionSummary.status}
                 </p>
                 <div
                   key={`${lootRevealSeed}-${latestReward?.id || "none"}`}
                   className={isLootRevealed ? "loot-card is-open" : "loot-card"}
                 >
-                  <p className="loot-card__label">Loot capsule</p>
+                  <p className="loot-card__label">Hộp quà may mắn</p>
                   <button type="button" className="loot-card__button" onClick={() => setIsLootRevealed((prev) => !prev)}>
                     {isLootRevealed
                       ? latestReward
                         ? `${latestReward.reward_name} · ${latestReward.rarity}`
-                        : "No reward this session"
-                      : "Tap to reveal"}
+                        : "Không nhận được phần thưởng"
+                      : "Nhấn để mở quà"}
                   </button>
                 </div>
               </div>
             ) : (
-              <EmptyState title="No completed session in this view" description="End a session to see summary and reward." />
+              <EmptyState title="Chưa có dữ liệu phiên trước" description="Kết thúc phiên học để xem tóm tắt và nhận thưởng." />
             )}
           </article>
         </div>
@@ -135,10 +135,10 @@ function PomodoroPage({
 
       <article className="panel panel--soft">
         <header className="mini-header">
-          <h3>Session history</h3>
+          <h3>Lịch sử phiên học</h3>
         </header>
         {sessions.length === 0 ? (
-          <EmptyState title="No sessions yet" description="Start your first focused session." />
+          <EmptyState title="Chưa có phiên học nào" description="Hãy thực hiện phiên học tập trung đầu tiên của bạn." />
         ) : (
           <ul className="list">
             {sessions.slice(0, 8).map((item) => (
@@ -146,7 +146,7 @@ function PomodoroPage({
                 <button type="button">
                   <span>{formatDate(item.started_at)}</span>
                   <span className="muted">
-                    {item.total_focus_minutes.toFixed(1)} min · {item.status}
+                    {item.total_focus_minutes.toFixed(1)} phút · {item.status}
                   </span>
                 </button>
               </li>

@@ -4,7 +4,6 @@ from fastapi import FastAPI
 
 from app.core.config import settings
 from app.infrastructure.db.session import AsyncSessionLocal, dispose_db_engine
-from app.infrastructure.jobs.streak_scheduler import StreakAtRiskScheduler
 from app.infrastructure.messaging.event_consumer import NotificationEventConsumer
 from app.infrastructure.messaging.event_publisher import EventPublisher
 from app.presentation.api.v1.router import api_router
@@ -21,16 +20,9 @@ async def lifespan(app: FastAPI):
     )
     await app.state.event_consumer.start()
 
-    app.state.streak_scheduler = StreakAtRiskScheduler(
-        session_factory=AsyncSessionLocal,
-        event_publisher=app.state.event_publisher,
-    )
-    app.state.streak_scheduler.start()
-
     try:
         yield
     finally:
-        app.state.streak_scheduler.shutdown()
         await app.state.event_consumer.close()
         await app.state.event_publisher.close()
         await dispose_db_engine()

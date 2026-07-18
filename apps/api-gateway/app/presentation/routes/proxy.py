@@ -85,5 +85,7 @@ def _prepare_forward_headers(request: Request) -> dict[str, str]:
         headers["X-User-Id"] = request.state.user_id
     if hasattr(request.state, "user_email"):
         headers["X-User-Email"] = request.state.user_email
+    if hasattr(request.state, "request_id"):
+        headers["X-Request-ID"] = request.state.request_id
 
     return headers

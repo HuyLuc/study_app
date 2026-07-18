@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "study-shared"
+version = "0.1.0"
+description = "Shared contracts, events, schemas, and libs for Study App"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.0.0"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["contracts*", "events*", "libs*", "schemas*"]

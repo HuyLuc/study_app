@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from zoneinfo import ZoneInfo
 
-from app.application.use_cases.notification_use_cases import NotificationUseCases
+from app.infrastructure.db.models import UserStreakModel
 from app.infrastructure.messaging.event_publisher import EventPublisher
 
 
 class StreakAtRiskScheduler:
+    ICT = timezone(timedelta(hours=7))
+
     def __init__(
         self,
         session_factory: async_sessionmaker[AsyncSession],
@@ -27,7 +31,7 @@ class StreakAtRiskScheduler:
         self.scheduler.add_job(
             self._run_daily_job,
             trigger=trigger,
-            id="notification_streak_at_risk_job",
+            id="gamification_streak_at_risk_job",
             replace_existing=True,
             coalesce=True,
             max_instances=1,
@@ -36,9 +40,25 @@ class StreakAtRiskScheduler:
         self._started = True
 
     async def _run_daily_job(self) -> None:
+        today_ict = datetime.now(self.ICT).date()
         async with self.session_factory() as session:
-            use_cases = NotificationUseCases(session)
-            await use_cases.publish_streak_at_risk_events(self.event_publisher)
+            stmt = select(UserStreakModel).where(
+                UserStreakModel.current_streak > 0,
+                (UserStreakModel.last_activity_date.is_(None) | (UserStreakModel.last_activity_date < today_ict))
+            )
+            result = await session.execute(stmt)
+            streaks = result.scalars().all()
+
+            for streak in streaks:
+                await self.event_publisher.publish(
+                    routing_key="streak.at_risk",
+                    payload={
+                        "event_type": "streak.at_risk",
+                        "user_id": str(streak.user_id),
+                        "current_streak": int(streak.current_streak),
+                        "last_activity_date": streak.last_activity_date.isoformat() if streak.last_activity_date else "",
+                    },
+                )
 
     def shutdown(self) -> None:
         if self._started:

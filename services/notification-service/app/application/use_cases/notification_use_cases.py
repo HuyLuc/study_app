@@ -11,7 +11,6 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.db.models import NotificationModel, NotificationPreferenceModel, ProcessedEventModel
-from app.infrastructure.messaging.event_publisher import EventPublisher
 
 
 class NotificationUseCases:
@@ -158,34 +157,6 @@ class NotificationUseCases:
         self.db_session.add(notification)
         await self.db_session.commit()
         return {"created": True}
-
-    async def publish_streak_at_risk_events(self, event_publisher: EventPublisher) -> int:
-        today_ict = datetime.now(self.ICT).date()
-
-        stmt = text(
-            """
-            SELECT user_id, current_streak, last_activity_date
-            FROM gamification.user_streaks
-            WHERE current_streak > 0
-              AND (last_activity_date IS NULL OR last_activity_date < :today_ict)
-            """
-        )
-        result = await self.db_session.execute(stmt, {"today_ict": today_ict})
-
-        published_count = 0
-        for row in result.all():
-            await event_publisher.publish(
-                routing_key="streak.at_risk",
-                payload={
-                    "event_type": "streak.at_risk",
-                    "user_id": str(row.user_id),
-                    "current_streak": int(row.current_streak),
-                    "last_activity_date": row.last_activity_date.isoformat() if row.last_activity_date else "",
-                },
-            )
-            published_count += 1
-
-        return published_count
 
     async def _is_enabled(self, user_id: UUID, channel: str, notification_type: str) -> bool:
         stmt = select(NotificationPreferenceModel).where(

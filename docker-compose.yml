@@ -17,7 +17,8 @@ services:
 
   auth-service:
     build:
-      context: ./services/auth-service
+      context: .
+      dockerfile: ./services/auth-service/Dockerfile
     container_name: study-auth-service
     ports:
       - "8001:8000"
@@ -30,7 +31,8 @@ services:
 
   learning-service:
     build:
-      context: ./services/learning-service
+      context: .
+      dockerfile: ./services/learning-service/Dockerfile
     container_name: study-learning-service
     ports:
       - "8002:8000"
@@ -43,7 +45,8 @@ services:
 
   gamification-service:
     build:
-      context: ./services/gamification-service
+      context: .
+      dockerfile: ./services/gamification-service/Dockerfile
     container_name: study-gamification-service
     ports:
       - "8003:8000"
@@ -56,7 +59,8 @@ services:
 
   notification-service:
     build:
-      context: ./services/notification-service
+      context: .
+      dockerfile: ./services/notification-service/Dockerfile
     container_name: study-notification-service
     ports:
       - "8004:8000"

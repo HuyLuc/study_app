@@ -8,21 +8,21 @@ function FocusOverlay({ isOpen, activeSession, selectedSkill, onLogFocusCycle, o
   return (
     <section className="focus-overlay" aria-label="Deep work overlay">
       <div className="focus-overlay__card">
-        <p className="eyebrow">Deep Work</p>
-        <h2>{selectedSkill?.name || "Focus session"}</h2>
+        <p className="eyebrow">Tập Trung Sâu</p>
+        <h2>{selectedSkill?.name || "Phiên tập trung"}</h2>
         <p className="focus-overlay__meta">
-          Started {formatDate(activeSession.started_at)} · Pomodoros {activeSession.pomodoros_completed}
+          Bắt đầu lúc {formatDate(activeSession.started_at)} · Số Pomodoro: {activeSession.pomodoros_completed}
         </p>
         <div className="focus-overlay__actions">
           <button type="button" className="button" onClick={onLogFocusCycle}>
-            Log focus cycle
+            Ghi nhận 25 phút tập trung
           </button>
           <button type="button" className="button button--primary" onClick={onEndSession}>
-            End session
+            Hoàn thành phiên
           </button>
         </div>
         <button type="button" className="button button--ghost" onClick={onClose}>
-          Exit focus view
+          Thoát chế độ tập trung
         </button>
       </div>
     </section>

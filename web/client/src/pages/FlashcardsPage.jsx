@@ -15,38 +15,38 @@ function FlashcardsPage({
   flashcardStats,
 }) {
   return (
-    <SectionShell title="Flashcard review" subtitle="Create cards and run spaced repetition reviews directly after your sessions.">
+    <SectionShell title="Ôn tập Flashcard" subtitle="Tạo các thẻ ghi nhớ và ôn tập lặp lại ngắt quãng ngay sau mỗi phiên học.">
       <div className="split-grid">
         <form className="panel panel--soft form-stack" onSubmit={createFlashcard}>
-          <h3>Create flashcard</h3>
+          <h3>Tạo thẻ ghi nhớ</h3>
           <label>
-            Front
+            Mặt trước
             <textarea
               value={flashcardForm.front}
               onChange={(event) => setFlashcardForm((prev) => ({ ...prev, front: event.target.value }))}
-              placeholder="Prompt"
+              placeholder="Câu hỏi / Gợi ý"
               required
             />
           </label>
           <label>
-            Back
+            Mặt sau
             <textarea
               value={flashcardForm.back}
               onChange={(event) => setFlashcardForm((prev) => ({ ...prev, back: event.target.value }))}
-              placeholder="Answer"
+              placeholder="Câu trả lời / Giải thích"
               required
             />
           </label>
           <button type="submit" className="button button--primary" disabled={!selectedSkillId}>
-            Add flashcard
+            Thêm thẻ
           </button>
-          <p className="muted">Current skill: {selectedSkill?.name || "none"}</p>
+          <p className="muted">Kỹ năng hiện tại: {selectedSkill?.name || "chưa chọn"}</p>
         </form>
 
         <article className="panel panel--soft">
-          <h3>Review queue</h3>
+          <h3>Hàng đợi ôn tập</h3>
           {flashcardsDue.length === 0 ? (
-            <EmptyState title="No due cards" description="Create cards or wait until next scheduled review." />
+            <EmptyState title="Không có thẻ cần ôn tập" description="Tạo thêm thẻ mới hoặc đợi đến lịch ôn tập tiếp theo." />
           ) : (
             <ul className="list list--cards">
               {flashcardsDue.slice(0, 12).map((card) => (
@@ -68,7 +68,7 @@ function FlashcardsPage({
                       ))}
                     </div>
                   ) : (
-                    <p className="muted">Tap card to reveal answer.</p>
+                    <p className="muted">Nhấp vào thẻ để xem đáp án.</p>
                   )}
                 </li>
               ))}
@@ -78,16 +78,16 @@ function FlashcardsPage({
       </div>
 
       <article className="panel panel--soft">
-        <h3>Flashcard stats</h3>
+        <h3>Thống kê Flashcard</h3>
         {flashcardStats ? (
           <div className="metrics-grid">
-            <MetricCard label="Total cards" value={flashcardStats.total_cards} />
-            <MetricCard label="Due today" value={flashcardStats.due_today} />
-            <MetricCard label="Total reviews" value={flashcardStats.total_reviews} />
-            <MetricCard label="Reviews today" value={flashcardStats.reviews_today} />
+            <MetricCard label="Tổng số thẻ" value={flashcardStats.total_cards} />
+            <MetricCard label="Cần ôn hôm nay" value={flashcardStats.due_today} />
+            <MetricCard label="Tổng lượt ôn" value={flashcardStats.total_reviews} />
+            <MetricCard label="Đã ôn hôm nay" value={flashcardStats.reviews_today} />
           </div>
         ) : (
-          <EmptyState title="No stats yet" description="Stats appear after your first card." />
+          <EmptyState title="Chưa có thống kê" description="Thống kê sẽ hiển thị sau khi bạn tạo thẻ đầu tiên." />
         )}
       </article>
     </SectionShell>

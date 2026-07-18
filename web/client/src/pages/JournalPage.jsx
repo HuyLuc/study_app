@@ -4,44 +4,44 @@ import { formatDate } from "../utils/formatDate";
 
 function JournalPage({ selectedSkillId, journalForm, setJournalForm, createJournalEntry, journalEntries }) {
   return (
-    <SectionShell title="Error journal" subtitle="Capture mistakes and lessons after each study session.">
+    <SectionShell title="Nhật ký lỗi sai" subtitle="Ghi lại các sai sót và bài học kinh nghiệm rút ra sau mỗi phiên học.">
       <div className="split-grid">
         <form className="panel panel--soft form-stack" onSubmit={createJournalEntry}>
-          <h3>New entry</h3>
+          <h3>Ghi chép mới</h3>
           <label>
-            Title
+            Tiêu đề
             <input
               value={journalForm.title}
               onChange={(event) => setJournalForm((prev) => ({ ...prev, title: event.target.value }))}
-              placeholder="What went wrong?"
+              placeholder="Có lỗi gì đã xảy ra?"
               required
             />
           </label>
           <label>
-            Description
+            Chi tiết lỗi sai
             <textarea
               value={journalForm.description}
               onChange={(event) => setJournalForm((prev) => ({ ...prev, description: event.target.value }))}
-              placeholder="Context of the mistake"
+              placeholder="Mô tả bối cảnh và nguyên nhân lỗi sai..."
             />
           </label>
           <label>
-            Lesson learned
+            Bài học rút ra
             <textarea
               value={journalForm.lesson_learned}
               onChange={(event) => setJournalForm((prev) => ({ ...prev, lesson_learned: event.target.value }))}
-              placeholder="How will you avoid this next time?"
+              placeholder="Bạn sẽ làm thế nào để tránh lỗi này lần sau?"
             />
           </label>
           <button type="submit" className="button button--primary" disabled={!selectedSkillId}>
-            Save entry
+            Lưu ghi chép
           </button>
         </form>
 
         <article className="panel panel--soft">
-          <h3>Journal history</h3>
+          <h3>Lịch sử nhật ký</h3>
           {journalEntries.length === 0 ? (
-            <EmptyState title="No entries yet" description="Write one insight after each session." />
+            <EmptyState title="Chưa có ghi chép nào" description="Hãy viết một bài học kinh nghiệm rút ra sau mỗi phiên học." />
           ) : (
             <ul className="list">
               {journalEntries.slice(0, 12).map((entry) => (
@@ -49,8 +49,8 @@ function JournalPage({ selectedSkillId, journalForm, setJournalForm, createJourn
                   <p>
                     <strong>{entry.title}</strong>
                   </p>
-                  <p>{entry.description || "No description."}</p>
-                  <p className="muted">Lesson: {entry.lesson_learned || "No lesson yet."}</p>
+                  <p>{entry.description || "Không có mô tả chi tiết."}</p>
+                  <p className="muted">Bài học: {entry.lesson_learned || "Chưa có bài học cụ thể."}</p>
                   <p className="muted">{formatDate(entry.created_at)}</p>
                 </li>
               ))}

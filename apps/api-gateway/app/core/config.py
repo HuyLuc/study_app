@@ -13,6 +13,7 @@ class Settings(BaseSettings):
 
     redis_url: str = "redis://redis:6379/1"
     rate_limit_per_minute: int = 120
+    rate_limit_ip_per_minute: int = 60
     cors_allow_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
