@@ -1,5 +1,9 @@
+import { useEffect, useMemo, useState } from "react";
+
+import CountdownDisplay from "../components/CountdownDisplay";
 import EmptyState from "../components/EmptyState";
 import SectionShell from "../components/SectionShell";
+import { AMBIENT_TRACK_OPTIONS, CLOCK_STYLE_OPTIONS } from "../constants/focusExperience";
 import { formatDate } from "../utils/formatDate";
 
 function PomodoroPage({
@@ -10,7 +14,15 @@ function PomodoroPage({
   setSessionForm,
   startSession,
   activeSession,
-  setFocusOverlayOpen,
+  focusClockStyle,
+  setFocusClockStyle,
+  focusMusicTrack,
+  setFocusMusicTrack,
+  focusMusicEnabled,
+  setFocusMusicEnabled,
+  focusMusicVolume,
+  setFocusMusicVolume,
+  enterFocusMode,
   logFocusCycle,
   endSession,
   sessionSummary,
@@ -20,10 +32,60 @@ function PomodoroPage({
   setIsLootRevealed,
   sessions,
 }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!activeSession) {
+      return undefined;
+    }
+
+    setNow(Date.now());
+    const intervalId = window.setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [activeSession]);
+
+  const focusMinutes = Number(activeSession?.focus_duration || sessionForm.focus_duration || 50);
+  const defaultDurationMs = focusMinutes * 60 * 1000;
+  const startedAtMs = activeSession ? new Date(activeSession.started_at).getTime() : 0;
+
+  const remainingMs = useMemo(() => {
+    if (!activeSession) {
+      return defaultDurationMs;
+    }
+    if (Number.isNaN(startedAtMs)) {
+      return 0;
+    }
+    return Math.max(0, startedAtMs + defaultDurationMs - now);
+  }, [activeSession, defaultDurationMs, startedAtMs, now]);
+
   return (
-    <SectionShell title="Chế độ làm việc sâu" subtitle="Bắt đầu phiên làm việc, ghi nhận các chu kỳ tập trung và nhận phần thưởng học tập.">
-      <div className="split-grid">
-        <form className="panel panel--soft form-stack" onSubmit={startSession}>
+    <SectionShell
+      title="Chế độ làm việc sâu"
+      subtitle="Bắt đầu phiên làm việc, ghi nhận các chu kỳ tập trung và nhận phần thưởng học tập."
+      className="pomodoro-page"
+    >
+      <div className="pomodoro-spotlight">
+        <p className="pomodoro-spotlight__label">{activeSession ? "Đang chạy phiên tập trung" : "Sẵn sàng bắt đầu phiên mới"}</p>
+        <CountdownDisplay
+          remainingMs={remainingMs}
+          totalDurationMs={defaultDurationMs}
+          mode={focusClockStyle}
+          className="pomodoro-spotlight__clock"
+        />
+        <p className="pomodoro-spotlight__meta">
+          {activeSession
+            ? `Bắt đầu lúc ${formatDate(activeSession.started_at)} · Pomodoro đã ghi: ${activeSession.pomodoros_completed}`
+            : `Thời lượng mặc định ${focusMinutes} phút`}
+        </p>
+      </div>
+
+      <div className={activeSession ? "split-grid pomodoro-grid is-running" : "split-grid pomodoro-grid"}>
+        <form className="panel panel--soft form-stack pomodoro-form" onSubmit={startSession}>
           <h3>Bắt đầu phiên học</h3>
           <label>
             Kỹ năng
@@ -56,16 +118,62 @@ function PomodoroPage({
               onChange={(event) => setSessionForm((prev) => ({ ...prev, break_duration: Number(event.target.value) }))}
             />
           </label>
+          <div className="focus-config">
+            <h4>Tùy biến màn tập trung</h4>
+            <label>
+              Kiểu đồng hồ đếm ngược
+              <select value={focusClockStyle} onChange={(event) => setFocusClockStyle(event.target.value)}>
+                {CLOCK_STYLE_OPTIONS.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="muted">{CLOCK_STYLE_OPTIONS.find((item) => item.id === focusClockStyle)?.description}</p>
+
+            <label>
+              Nhạc nền
+              <select value={focusMusicTrack} onChange={(event) => setFocusMusicTrack(event.target.value)}>
+                {AMBIENT_TRACK_OPTIONS.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="inline-switch">
+              <input
+                type="checkbox"
+                checked={focusMusicEnabled}
+                onChange={(event) => setFocusMusicEnabled(event.target.checked)}
+              />
+              <span>Bật nhạc nền khi vào full-screen</span>
+            </label>
+
+            <label>
+              Âm lượng: {Math.round(focusMusicVolume * 100)}%
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={Math.round(focusMusicVolume * 100)}
+                onChange={(event) => setFocusMusicVolume(Number(event.target.value) / 100)}
+              />
+            </label>
+          </div>
           <button type="submit" className="button button--primary" disabled={!selectedSkillId || Boolean(activeSession)}>
             {activeSession ? "Đang trong phiên học" : "Bắt đầu phiên học"}
           </button>
           <button
             type="button"
             className="button button--ghost"
-            onClick={() => setFocusOverlayOpen(true)}
+            onClick={enterFocusMode}
             disabled={!activeSession}
           >
-            Vào chế độ tập trung
+            Vào full-screen tập trung
           </button>
           {activeSession ? (
             <div className="action-row">
@@ -79,7 +187,7 @@ function PomodoroPage({
           ) : null}
         </form>
 
-        <div className="stacked-panels">
+        <div className="stacked-panels pomodoro-side">
           <article className="panel panel--soft">
             <h3>Phiên hiện tại</h3>
             {activeSession ? (
@@ -133,7 +241,7 @@ function PomodoroPage({
         </div>
       </div>
 
-      <article className="panel panel--soft">
+      <article className="panel panel--soft panel--history">
         <header className="mini-header">
           <h3>Lịch sử phiên học</h3>
         </header>

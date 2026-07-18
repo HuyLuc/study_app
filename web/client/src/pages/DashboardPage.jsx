@@ -17,32 +17,36 @@ function DashboardPage({
   onMarkNotificationRead,
 }) {
   return (
-    <SectionShell title="Bảng điều khiển học tập" subtitle="Nơi quản lý chuỗi ngày học (streak), điểm kinh nghiệm (XP), tiến độ kỹ năng và thông báo.">
+    <SectionShell
+      title="Bảng điều khiển học tập"
+      subtitle="Nơi quản lý chuỗi ngày học (streak), điểm kinh nghiệm (XP), tiến độ kỹ năng và thông báo."
+      className="dashboard-page"
+    >
       <div className="metrics-grid">
         <MetricCard
           label="Điểm XP hiện tại"
           value={profile ? profile.total_xp : "-"}
-          detail={profile ? `Cấp độ ${profile.level} · ${profile.title}` : "Thông tin hồ sơ chưa sẵn sàng."}
+          detail={profile ? `Cấp ${profile.level} · ${profile.title}` : "Hồ sơ chưa sẵn sàng"}
         />
         <MetricCard
           label="Chuỗi học tập (Streak)"
           value={streak ? `${streak.current_streak} ngày` : "-"}
-          detail={streak ? `Kỷ lục ${streak.longest_streak} · Lượt đóng băng còn ${streak.freeze_count}` : "Streak engine đang tạm nghỉ."}
+          detail={streak ? `Kỷ lục ${streak.longest_streak} · Freeze ${streak.freeze_count}` : "Chưa có dữ liệu streak"}
         />
         <MetricCard
           label="Kỹ năng đang học"
           value={skills.length}
-          detail={selectedSkill ? `Đang chọn: ${selectedSkill.name}` : "Tạo kỹ năng đầu tiên để bắt đầu."}
+          detail={selectedSkill ? `Đang chọn: ${selectedSkill.name}` : "Tạo kỹ năng đầu tiên"}
         />
         <MetricCard
           label="Thông báo chưa đọc"
           value={unreadNotifications.length}
-          detail="Các thông báo từ hệ thống và nhắc nhở chuỗi học tập."
+          detail="Cập nhật mới từ hệ thống"
         />
       </div>
 
-      <div className="split-grid">
-        <article className="panel panel--soft">
+      <section className="dashboard-surface">
+        <article className="dashboard-surface__column">
           <header className="mini-header">
             <h3>Kỹ năng</h3>
             <button type="button" className="chip" onClick={onOpenOnboarding}>
@@ -50,7 +54,12 @@ function DashboardPage({
             </button>
           </header>
           {skills.length === 0 ? (
-            <EmptyState title="Chưa có kỹ năng nào" description="Hãy tạo kỹ năng đầu tiên của bạn trong phần Cài đặt kỹ năng." />
+            <EmptyState
+              title="Chưa có kỹ năng nào"
+              description="Bắt đầu bằng một kỹ năng chính để hệ thống gợi ý lộ trình học."
+              ctaLabel="Mở thiết lập kỹ năng"
+              onCta={onOpenOnboarding}
+            />
           ) : (
             <ul className="list">
               {skills.map((skill) => (
@@ -67,7 +76,7 @@ function DashboardPage({
           )}
         </article>
 
-        <article className="panel panel--soft">
+        <article className="dashboard-surface__column">
           <header className="mini-header">
             <h3>Thông báo</h3>
             <button type="button" className="chip" onClick={onMarkAllNotificationsRead}>
@@ -89,7 +98,7 @@ function DashboardPage({
             </ul>
           )}
         </article>
-      </div>
+      </section>
     </SectionShell>
   );
 }

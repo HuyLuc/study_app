@@ -15,7 +15,11 @@ function FlashcardsPage({
   flashcardStats,
 }) {
   return (
-    <SectionShell title="Ôn tập Flashcard" subtitle="Tạo các thẻ ghi nhớ và ôn tập lặp lại ngắt quãng ngay sau mỗi phiên học.">
+    <SectionShell
+      title="Ôn tập Flashcard"
+      subtitle="Tạo các thẻ ghi nhớ và ôn tập lặp lại ngắt quãng ngay sau mỗi phiên học."
+      className="flashcards-page"
+    >
       <div className="split-grid">
         <form className="panel panel--soft form-stack" onSubmit={createFlashcard}>
           <h3>Tạo thẻ ghi nhớ</h3>
@@ -43,7 +47,7 @@ function FlashcardsPage({
           <p className="muted">Kỹ năng hiện tại: {selectedSkill?.name || "chưa chọn"}</p>
         </form>
 
-        <article className="panel panel--soft">
+        <article className="panel panel--plain flashcards-deck">
           <h3>Hàng đợi ôn tập</h3>
           {flashcardsDue.length === 0 ? (
             <EmptyState title="Không có thẻ cần ôn tập" description="Tạo thêm thẻ mới hoặc đợi đến lịch ôn tập tiếp theo." />
@@ -77,7 +81,7 @@ function FlashcardsPage({
         </article>
       </div>
 
-      <article className="panel panel--soft">
+      <article className="panel panel--plain">
         <h3>Thống kê Flashcard</h3>
         {flashcardStats ? (
           <div className="metrics-grid">

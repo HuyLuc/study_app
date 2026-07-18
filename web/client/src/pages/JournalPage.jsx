@@ -3,39 +3,41 @@ import SectionShell from "../components/SectionShell";
 import { formatDate } from "../utils/formatDate";
 
 function JournalPage({ selectedSkillId, journalForm, setJournalForm, createJournalEntry, journalEntries }) {
+  const todayLabel = formatDate(new Date().toISOString());
+
   return (
-    <SectionShell title="Nhật ký lỗi sai" subtitle="Ghi lại các sai sót và bài học kinh nghiệm rút ra sau mỗi phiên học.">
-      <div className="split-grid">
-        <form className="panel panel--soft form-stack" onSubmit={createJournalEntry}>
-          <h3>Ghi chép mới</h3>
-          <label>
-            Tiêu đề
-            <input
-              value={journalForm.title}
-              onChange={(event) => setJournalForm((prev) => ({ ...prev, title: event.target.value }))}
-              placeholder="Có lỗi gì đã xảy ra?"
-              required
-            />
-          </label>
-          <label>
-            Chi tiết lỗi sai
-            <textarea
-              value={journalForm.description}
-              onChange={(event) => setJournalForm((prev) => ({ ...prev, description: event.target.value }))}
-              placeholder="Mô tả bối cảnh và nguyên nhân lỗi sai..."
-            />
-          </label>
-          <label>
-            Bài học rút ra
-            <textarea
-              value={journalForm.lesson_learned}
-              onChange={(event) => setJournalForm((prev) => ({ ...prev, lesson_learned: event.target.value }))}
-              placeholder="Bạn sẽ làm thế nào để tránh lỗi này lần sau?"
-            />
-          </label>
-          <button type="submit" className="button button--primary" disabled={!selectedSkillId}>
-            Lưu ghi chép
-          </button>
+    <SectionShell
+      title="Nhật ký lỗi sai"
+      subtitle="Ghi lại các sai sót và bài học kinh nghiệm rút ra sau mỗi phiên học."
+      className="journal-page"
+    >
+      <div className="split-grid journal-layout">
+        <form className="journal-sheet" onSubmit={createJournalEntry}>
+          <p className="journal-sheet__date">{todayLabel}</p>
+          <input
+            className="journal-input journal-input--title"
+            value={journalForm.title}
+            onChange={(event) => setJournalForm((prev) => ({ ...prev, title: event.target.value }))}
+            placeholder="Tiêu đề lỗi sai hôm nay..."
+            required
+          />
+          <textarea
+            className="journal-input journal-input--body"
+            value={journalForm.description}
+            onChange={(event) => setJournalForm((prev) => ({ ...prev, description: event.target.value }))}
+            placeholder="Mô tả bối cảnh, nguyên nhân và cách bạn đã xử lý..."
+          />
+          <textarea
+            className="journal-input journal-input--body"
+            value={journalForm.lesson_learned}
+            onChange={(event) => setJournalForm((prev) => ({ ...prev, lesson_learned: event.target.value }))}
+            placeholder="Bài học rút ra để không lặp lại lỗi này..."
+          />
+          <div className="journal-sheet__actions">
+            <button type="submit" className="button button--primary" disabled={!selectedSkillId}>
+              Lưu ghi chép
+            </button>
+          </div>
         </form>
 
         <article className="panel panel--soft">

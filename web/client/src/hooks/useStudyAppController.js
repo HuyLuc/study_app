@@ -12,6 +12,39 @@ const defaultSessionForm = { focus_duration: 50, break_duration: 10 };
 const defaultFlashcardForm = { front: "", back: "" };
 const defaultJournalForm = { title: "", description: "", lesson_learned: "" };
 
+async function requestFullscreenSafe() {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  const root = document.documentElement;
+  if (!root?.requestFullscreen || document.fullscreenElement) {
+    return;
+  }
+
+  try {
+    await root.requestFullscreen();
+  } catch {
+    // Browser may block fullscreen if user gesture is not available.
+  }
+}
+
+async function exitFullscreenSafe() {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  if (!document.fullscreenElement || !document.exitFullscreen) {
+    return;
+  }
+
+  try {
+    await document.exitFullscreen();
+  } catch {
+    // Ignore fullscreen exit errors.
+  }
+}
+
 export function useStudyAppController() {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [busyLabel, setBusyLabel] = useState("");
@@ -57,6 +90,10 @@ export function useStudyAppController() {
   const [preferences, setPreferences] = useState([]);
 
   const [focusOverlayOpen, setFocusOverlayOpen] = useState(false);
+  const [focusClockStyle, setFocusClockStyle] = useState("halo");
+  const [focusMusicTrack, setFocusMusicTrack] = useState("none");
+  const [focusMusicEnabled, setFocusMusicEnabled] = useState(false);
+  const [focusMusicVolume, setFocusMusicVolume] = useState(0.4);
   const [revealedFlashcards, setRevealedFlashcards] = useState({});
   const [lootRevealSeed, setLootRevealSeed] = useState(0);
   const [isLootRevealed, setIsLootRevealed] = useState(false);
@@ -172,6 +209,8 @@ export function useStudyAppController() {
 
     setSkills(skillsData || []);
     setSessions(sessionsData || []);
+    const restoredActiveSession = (sessionsData || []).find((item) => item.status === "active") || null;
+    setActiveSession(restoredActiveSession);
     setProfile(profileData || null);
     setStreak(streakData || null);
     setLeaderboard(leaderboardData || []);
@@ -183,7 +222,9 @@ export function useStudyAppController() {
     setPreferences(preferencesData || []);
 
     const hasCurrentSkill = (skillsData || []).some((item) => item.id === selectedSkillId);
-    if (!hasCurrentSkill) {
+    if (restoredActiveSession?.skill_id) {
+      setSelectedSkillId(restoredActiveSession.skill_id);
+    } else if (!hasCurrentSkill) {
       setSelectedSkillId(skillsData?.[0]?.id || "");
     }
   }
@@ -225,6 +266,7 @@ export function useStudyAppController() {
   useEffect(() => {
     if (!activeSession) {
       setFocusOverlayOpen(false);
+      exitFullscreenSafe();
     }
   }, [activeSession]);
 
@@ -279,6 +321,7 @@ export function useStudyAppController() {
       setFlashcardStats(null);
       setRevealedFlashcards({});
       setFocusOverlayOpen(false);
+      await exitFullscreenSafe();
       setLootRevealSeed(0);
       setIsLootRevealed(false);
       setJournalEntries([]);
@@ -384,14 +427,35 @@ export function useStudyAppController() {
     }
 
     await runBusy("Starting session...", async () => {
-      const session = await learningApi.startSession({
-        skill_id: selectedSkillId,
-        focus_duration: Number(sessionForm.focus_duration || 50),
-        break_duration: Number(sessionForm.break_duration || 10),
-      });
-      setActiveSession(session);
-      setSessionSummary(null);
-      showNotice("Session started.", "success");
+      try {
+        const session = await learningApi.startSession({
+          skill_id: selectedSkillId,
+          focus_duration: Number(sessionForm.focus_duration || 50),
+          break_duration: Number(sessionForm.break_duration || 10),
+        });
+        setActiveSession(session);
+        setSessionSummary(null);
+        setFocusOverlayOpen(true);
+        await requestFullscreenSafe();
+        showNotice("Session started.", "success");
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 409) {
+          const latestSessions = await learningApi.listSessions();
+          setSessions(latestSessions || []);
+
+          const existingActiveSession = (latestSessions || []).find((item) => item.status === "active") || null;
+          if (existingActiveSession) {
+            setActiveSession(existingActiveSession);
+            setSelectedSkillId(existingActiveSession.skill_id);
+            setSessionSummary(null);
+            setFocusOverlayOpen(true);
+            await requestFullscreenSafe();
+            showNotice("Bạn đã có phiên đang chạy, hệ thống đã mở lại phiên này.", "neutral");
+            return;
+          }
+        }
+        throw error;
+      }
     });
   }
 
@@ -427,6 +491,7 @@ export function useStudyAppController() {
       setSessionSummary(ended);
       setActiveSession(null);
       setFocusOverlayOpen(false);
+      await exitFullscreenSafe();
       setLootRevealSeed((prev) => prev + 1);
       setIsLootRevealed(false);
       await loadGlobalData();
@@ -545,6 +610,16 @@ export function useStudyAppController() {
     });
   }
 
+  async function enterFocusMode() {
+    setFocusOverlayOpen(true);
+    await requestFullscreenSafe();
+  }
+
+  async function closeFocusMode() {
+    setFocusOverlayOpen(false);
+    await exitFullscreenSafe();
+  }
+
   return {
     isBootstrapping,
     busyLabel,
@@ -596,7 +671,17 @@ export function useStudyAppController() {
     notifications,
     preferences,
     focusOverlayOpen,
+    focusClockStyle,
+    setFocusClockStyle,
+    focusMusicTrack,
+    setFocusMusicTrack,
+    focusMusicEnabled,
+    setFocusMusicEnabled,
+    focusMusicVolume,
+    setFocusMusicVolume,
     setFocusOverlayOpen,
+    enterFocusMode,
+    closeFocusMode,
     revealedFlashcards,
     lootRevealSeed,
     isLootRevealed,

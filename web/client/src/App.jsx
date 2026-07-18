@@ -23,7 +23,12 @@ function App() {
     setActiveView,
     onLogout,
     focusOverlayOpen,
-    setFocusOverlayOpen,
+    enterFocusMode,
+    closeFocusMode,
+    focusClockStyle,
+    focusMusicTrack,
+    focusMusicEnabled,
+    focusMusicVolume,
     activeSession,
     selectedSkill,
     logFocusCycle,
@@ -45,11 +50,12 @@ function App() {
   }
 
   return (
-    <>
+    <div className="app-frame">
       <div className="background-layers" aria-hidden="true">
         <span className="halo halo--a" />
         <span className="halo halo--b" />
         <span className="halo halo--c" />
+        <span className="grid-overlay" />
       </div>
 
       <TopNav user={user} onLogout={onLogout} />
@@ -67,10 +73,30 @@ function App() {
             setAuthMode={setAuthMode}
           />
         ) : (
-          <>
-            <SegmentedNav items={NAV_ITEMS} activeView={activeView} onChange={setActiveView} />
-            <MainContent controller={controller} />
-          </>
+          <div className="workspace-shell">
+            <aside className="workspace-rail fade-up">
+              <p className="workspace-rail__kicker">Learning Workspace</p>
+              <h2 className="workspace-rail__title">Lộ trình học tập cá nhân</h2>
+              <p className="workspace-rail__subtitle">
+                Chọn chế độ làm việc ở thanh bên trái, toàn bộ nội dung chi tiết sẽ hiển thị ở khu vực chính.
+              </p>
+
+              <SegmentedNav items={NAV_ITEMS} activeView={activeView} onChange={setActiveView} variant="rail" />
+
+              <div className="workspace-rail__status">
+                <p>
+                  <strong>Phiên tập trung:</strong> {activeSession ? "Đang chạy" : "Chưa bắt đầu"}
+                </p>
+                <p>
+                  <strong>Kỹ năng hiện tại:</strong> {selectedSkill?.name || "Chưa chọn"}
+                </p>
+              </div>
+            </aside>
+
+            <section className="workspace-main fade-up">
+              <MainContent controller={controller} />
+            </section>
+          </div>
         )}
       </main>
 
@@ -78,11 +104,15 @@ function App() {
         isOpen={focusOverlayOpen}
         activeSession={activeSession}
         selectedSkill={selectedSkill}
+        focusClockStyle={focusClockStyle}
+        focusMusicTrack={focusMusicTrack}
+        focusMusicEnabled={focusMusicEnabled}
+        focusMusicVolume={focusMusicVolume}
         onLogFocusCycle={logFocusCycle}
         onEndSession={endSession}
-        onClose={() => setFocusOverlayOpen(false)}
+        onClose={closeFocusMode}
       />
-    </>
+    </div>
   );
 }
 
@@ -119,7 +149,15 @@ function MainContent({ controller }) {
     setSessionForm,
     startSession,
     activeSession,
-    setFocusOverlayOpen,
+    focusClockStyle,
+    setFocusClockStyle,
+    focusMusicTrack,
+    setFocusMusicTrack,
+    focusMusicEnabled,
+    setFocusMusicEnabled,
+    focusMusicVolume,
+    setFocusMusicVolume,
+    enterFocusMode,
     logFocusCycle,
     endSession,
     sessionSummary,
@@ -182,7 +220,15 @@ function MainContent({ controller }) {
         setSessionForm={setSessionForm}
         startSession={startSession}
         activeSession={activeSession}
-        setFocusOverlayOpen={setFocusOverlayOpen}
+        focusClockStyle={focusClockStyle}
+        setFocusClockStyle={setFocusClockStyle}
+        focusMusicTrack={focusMusicTrack}
+        setFocusMusicTrack={setFocusMusicTrack}
+        focusMusicEnabled={focusMusicEnabled}
+        setFocusMusicEnabled={setFocusMusicEnabled}
+        focusMusicVolume={focusMusicVolume}
+        setFocusMusicVolume={setFocusMusicVolume}
+        enterFocusMode={enterFocusMode}
         logFocusCycle={logFocusCycle}
         endSession={endSession}
         sessionSummary={sessionSummary}
