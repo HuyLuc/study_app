@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import FocusOverlay from "./components/FocusOverlay";
 import SegmentedNav from "./components/SegmentedNav";
 import TopNav from "./components/TopNav";
+import { IconBell, IconLogout, IconMoon, IconPlus, IconSun } from "./components/icons";
 import { NAV_ITEMS } from "./constants/navigation";
 import { useStudyAppController } from "./hooks/useStudyAppController";
 import AuthPage from "./pages/AuthPage";
@@ -10,6 +12,8 @@ import JournalPage from "./pages/JournalPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import PomodoroPage from "./pages/PomodoroPage";
 import ProfilePage from "./pages/ProfilePage";
+
+const THEME_STORAGE_KEY = "study_app_theme";
 
 function App() {
   const controller = useStudyAppController();
@@ -31,6 +35,9 @@ function App() {
     focusMusicVolume,
     activeSession,
     selectedSkill,
+    skills,
+    setSelectedSkillId,
+    unreadNotifications,
     logFocusCycle,
     endSession,
     authMode,
@@ -39,6 +46,36 @@ function App() {
     onAuthSubmit,
     setAuthMode,
   } = controller;
+
+  const [themePreference, setThemePreference] = useState(() => localStorage.getItem(THEME_STORAGE_KEY) || null);
+  const [systemPrefersDark, setSystemPrefersDark] = useState(
+    () => window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false,
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = (event) => setSystemPrefersDark(event.matches);
+    media.addEventListener("change", handleChange);
+    return () => media.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (themePreference === "light" || themePreference === "dark") {
+      document.documentElement.dataset.theme = themePreference;
+      localStorage.setItem(THEME_STORAGE_KEY, themePreference);
+    } else {
+      delete document.documentElement.dataset.theme;
+      localStorage.removeItem(THEME_STORAGE_KEY);
+    }
+  }, [themePreference]);
+
+  const isDarkActive = themePreference ? themePreference === "dark" : systemPrefersDark;
+
+  const workspaceStatusText = activeSession
+    ? `Phiên tập trung: đang chạy${selectedSkill ? ` • ${selectedSkill.name}` : ""}`
+    : selectedSkill
+      ? `Kỹ năng hiện tại: ${selectedSkill.name}`
+      : "Chưa bắt đầu phiên tập trung";
 
   if (isBootstrapping) {
     return (
@@ -55,10 +92,9 @@ function App() {
         <span className="halo halo--a" />
         <span className="halo halo--b" />
         <span className="halo halo--c" />
-        <span className="grid-overlay" />
       </div>
 
-      <TopNav user={user} onLogout={onLogout} />
+      <TopNav statusText={user ? workspaceStatusText : undefined} />
 
       <main className="app-shell">
         {notice.text ? <div className={`notice notice--${notice.tone || "neutral"}`}>{notice.text}</div> : null}
@@ -75,21 +111,76 @@ function App() {
         ) : (
           <div className="workspace-shell">
             <aside className="workspace-rail fade-up">
-              <p className="workspace-rail__kicker">Learning Workspace</p>
-              <h2 className="workspace-rail__title">Lộ trình học tập cá nhân</h2>
-              <p className="workspace-rail__subtitle">
-                Chọn chế độ làm việc ở thanh bên trái, toàn bộ nội dung chi tiết sẽ hiển thị ở khu vực chính.
-              </p>
+              <div className="rail-brand" aria-hidden="true">
+                <span className="rail-brand__mark">HT</span>
+              </div>
 
               <SegmentedNav items={NAV_ITEMS} activeView={activeView} onChange={setActiveView} variant="rail" />
 
-              <div className="workspace-rail__status">
-                <p>
-                  <strong>Phiên tập trung:</strong> {activeSession ? "Đang chạy" : "Chưa bắt đầu"}
-                </p>
-                <p>
-                  <strong>Kỹ năng hiện tại:</strong> {selectedSkill?.name || "Chưa chọn"}
-                </p>
+              <div className="rail-divider" />
+              <div className="rail-shortcuts">
+                {skills.slice(0, 4).map((skill, index) => (
+                  <button
+                    key={skill.id}
+                    type="button"
+                    className="rail-shortcut"
+                    onClick={() => {
+                      setSelectedSkillId(skill.id);
+                      setActiveView("dashboard");
+                    }}
+                  >
+                    <span className={`rail-shortcut__dot rail-shortcut__dot--${index % 4}`} aria-hidden="true" />
+                    <span className="rail-shortcut__label">{skill.name}</span>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="rail-shortcut rail-shortcut--add"
+                  onClick={() => setActiveView("onboarding")}
+                  aria-label="Thêm kỹ năng mới"
+                >
+                  <IconPlus />
+                </button>
+              </div>
+
+              <div className="rail-divider" />
+              <div className="rail-utility">
+                <button
+                  type="button"
+                  className="segmented-nav__item"
+                  onClick={() => setActiveView("dashboard")}
+                >
+                  <span className="segmented-nav__icon">
+                    <IconBell />
+                    {unreadNotifications.length > 0 ? <span className="rail-badge-dot" aria-hidden="true" /> : null}
+                  </span>
+                  <span className="segmented-nav__label">Thông báo</span>
+                </button>
+                <button type="button" className="segmented-nav__item" onClick={onLogout}>
+                  <span className="segmented-nav__icon">
+                    <IconLogout />
+                  </span>
+                  <span className="segmented-nav__label">Đăng xuất</span>
+                </button>
+              </div>
+
+              <div className="rail-theme-toggle" role="group" aria-label="Giao diện sáng / tối">
+                <button
+                  type="button"
+                  className={!isDarkActive ? "rail-theme-toggle__option is-active" : "rail-theme-toggle__option"}
+                  onClick={() => setThemePreference("light")}
+                >
+                  <IconSun />
+                  Sáng
+                </button>
+                <button
+                  type="button"
+                  className={isDarkActive ? "rail-theme-toggle__option is-active" : "rail-theme-toggle__option"}
+                  onClick={() => setThemePreference("dark")}
+                >
+                  <IconMoon />
+                  Tối
+                </button>
               </div>
             </aside>
 
